@@ -1,37 +1,12 @@
 
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/components/ui/use-toast";
 import SearchBar from "@/components/SearchBar";
 import RecipeCard from "@/components/RecipeCard";
 import DietaryFilter from "@/components/DietaryFilter";
 import { Recipe } from "@/types/recipe";
-
-// Temporary mock data
-const mockRecipes: Recipe[] = [
-  {
-    id: "1",
-    name: "Vegetarian Pasta Primavera",
-    image: "https://images.unsplash.com/photo-1473093295043-cdd812d0e601",
-    cuisine: "Italian",
-    difficulty: "easy",
-    duration: 30,
-    ingredients: ["pasta", "vegetables", "olive oil"],
-    instructions: ["Boil pasta", "Sauté vegetables", "Combine and serve"],
-    dietary: ["vegetarian"],
-    saved: false,
-  },
-  {
-    id: "2",
-    name: "Chicken Stir Fry",
-    image: "https://images.unsplash.com/photo-1512058564366-18510be2db19",
-    cuisine: "Asian",
-    difficulty: "medium",
-    duration: 45,
-    ingredients: ["chicken", "vegetables", "soy sauce"],
-    instructions: ["Cut chicken", "Stir fry vegetables", "Add sauce"],
-    dietary: ["high-protein"],
-    saved: true,
-  },
-];
+import { searchRecipesByIngredients } from "@/services/recipeApi";
 
 const dietaryOptions = [
   "vegetarian",
@@ -42,16 +17,36 @@ const dietaryOptions = [
 ];
 
 const Index = () => {
+  const { toast } = useToast();
   const [search, setSearch] = useState("");
-  const [recipes, setRecipes] = useState<Recipe[]>(mockRecipes);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
 
+  // Debounce search input
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearch(value);
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  };
+
+  // Fetch recipes using React Query
+  const { data: recipes = [], isLoading, isError } = useQuery({
+    queryKey: ['recipes', debouncedSearch],
+    queryFn: () => searchRecipesByIngredients(debouncedSearch, import.meta.env.VITE_SPOONACULAR_API_KEY),
+    enabled: debouncedSearch.length > 0,
+  });
+
   const handleSaveRecipe = (id: string) => {
-    setRecipes((prev) =>
-      prev.map((recipe) =>
-        recipe.id === id ? { ...recipe, saved: !recipe.saved } : recipe
-      )
-    );
+    // Update local state for saved recipes
+    const recipe = recipes.find(r => r.id === id);
+    if (recipe) {
+      toast({
+        title: recipe.saved ? "Recipe removed from favorites" : "Recipe saved to favorites",
+        duration: 2000
+      });
+    }
   };
 
   const toggleDietary = (option: string) => {
@@ -72,7 +67,11 @@ const Index = () => {
           </p>
         </div>
 
-        <SearchBar value={search} onChange={setSearch} />
+        <SearchBar 
+          value={search} 
+          onChange={handleSearchChange}
+          placeholder="Enter ingredients (e.g., tomatoes, basil, mozzarella)"
+        />
 
         <div className="space-y-6">
           <div>
@@ -83,6 +82,24 @@ const Index = () => {
               onToggle={toggleDietary}
             />
           </div>
+
+          {isError && (
+            <div className="text-center text-red-500">
+              Error loading recipes. Please try again later.
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="text-center text-gray-600">
+              Searching for recipes...
+            </div>
+          )}
+
+          {!isLoading && !isError && recipes.length === 0 && debouncedSearch && (
+            <div className="text-center text-gray-600">
+              No recipes found. Try different ingredients!
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recipes.map((recipe) => (
