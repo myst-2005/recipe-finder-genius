@@ -5,6 +5,7 @@ import { useToast } from "@/components/ui/use-toast";
 import SearchBar from "@/components/SearchBar";
 import RecipeCard from "@/components/RecipeCard";
 import DietaryFilter from "@/components/DietaryFilter";
+import AuthButton from "@/components/AuthButton";
 import { Recipe } from "@/types/recipe";
 import { searchRecipesByIngredients, toggleFavoriteRecipe, getFavoriteStatus } from "@/services/recipeApi";
 import { supabase } from "@/integrations/supabase/client";
@@ -96,11 +97,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container py-8 space-y-8">
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl font-bold text-gray-900">Recipe Finder</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Enter your ingredients to discover delicious recipes you can make right now
-          </p>
+        <div className="flex justify-between items-center">
+          <div className="text-center space-y-4 flex-grow">
+            <h1 className="text-4xl font-bold text-gray-900">Recipe Finder</h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Enter your ingredients to discover delicious recipes you can make right now
+            </p>
+          </div>
+          <AuthButton userId={user?.id ?? null} />
         </div>
 
         <SearchBar 
