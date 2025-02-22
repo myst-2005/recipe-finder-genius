@@ -1,15 +1,12 @@
-
 import { Recipe } from "@/types/recipe";
 import { supabase } from "@/integrations/supabase/client";
 
-const BASE_URL = "https://api.spoonacular.com/recipes";
-
-export const searchRecipesByIngredients = async (
-  ingredients: string,
-  apiKey: string
-): Promise<Recipe[]> => {
+export async function searchRecipesByIngredients(ingredients: string, apiKey: string) {
   try {
-    // Split ingredients by commas and clean up whitespace
+    if (!apiKey) {
+      throw new Error('Spoonacular API key is not configured');
+    }
+
     const cleanedIngredients = ingredients
       .split(',')
       .map(i => i.trim())
@@ -17,15 +14,15 @@ export const searchRecipesByIngredients = async (
       .join(',');
 
     const response = await fetch(
-      `${BASE_URL}/findByIngredients?apiKey=${apiKey}&ingredients=${cleanedIngredients}&number=12&ranking=2&ignorePantry=false`
+      `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${cleanedIngredients}&apiKey=${apiKey}&number=9`
     );
-    
+
     if (!response.ok) {
       throw new Error('Failed to fetch recipes');
     }
 
     const data = await response.json();
-    
+
     // Transform Spoonacular data and calculate match percentage
     const recipes = data.map((item: any) => {
       const usedIngredientCount = item.usedIngredients.length;
@@ -81,31 +78,12 @@ export const searchRecipesByIngredients = async (
       }
     }
 
-    if (!process.env.VITE_SPOONACULAR_API_KEY) {
-    throw new Error('Spoonacular API key is not configured');
-  }
-
-  const response = await fetch(
-    `https://api.spoonacular.com/recipes/findByIngredients?ingredients=${ingredients}&apiKey=${process.env.VITE_SPOONACULAR_API_KEY}&number=9`
-  );
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch recipes');
-  }
-
-  const data = await response.json();
-  return data.map((recipe: any) => ({
-    id: recipe.id.toString(),
-    name: recipe.title,
-    image: recipe.image,
-    availableIngredients: recipe.usedIngredients.map((i: any) => i.name),
-    missingIngredients: recipe.missedIngredients.map((i: any) => i.name)
-  }));
+    return recipes;
   } catch (error) {
     console.error('Error fetching recipes:', error);
     throw error;
   }
-};
+}
 
 export const toggleFavoriteRecipe = async (recipeId: string, userId: string | undefined) => {
   if (!userId) {
