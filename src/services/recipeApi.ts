@@ -9,8 +9,15 @@ export const searchRecipesByIngredients = async (
   apiKey: string
 ): Promise<Recipe[]> => {
   try {
+    // Split ingredients by commas and clean up whitespace
+    const cleanedIngredients = ingredients
+      .split(',')
+      .map(i => i.trim())
+      .filter(i => i)
+      .join(',');
+
     const response = await fetch(
-      `${BASE_URL}/findByIngredients?apiKey=${apiKey}&ingredients=${ingredients}&number=9&ranking=2&ignorePantry=true`
+      `${BASE_URL}/findByIngredients?apiKey=${apiKey}&ingredients=${cleanedIngredients}&number=12&ranking=2&ignorePantry=false`
     );
     
     if (!response.ok) {
@@ -19,19 +26,35 @@ export const searchRecipesByIngredients = async (
 
     const data = await response.json();
     
-    // Transform Spoonacular data and store in Supabase
-    const recipes = data.map((item: any) => ({
-      id: item.id.toString(),
-      name: item.title,
-      image: item.image,
-      cuisine: "Various",
-      difficulty: "medium" as const,
-      duration: 30,
-      ingredients: item.usedIngredients.map((ing: any) => ing.name),
-      instructions: [],
-      dietary: [],
-      saved: false
-    }));
+    // Transform Spoonacular data and calculate match percentage
+    const recipes = data.map((item: any) => {
+      const usedIngredientCount = item.usedIngredients.length;
+      const missedIngredientCount = item.missedIngredients.length;
+      const totalIngredients = usedIngredientCount + missedIngredientCount;
+      const matchPercentage = Math.round((usedIngredientCount / totalIngredients) * 100);
+
+      return {
+        id: item.id.toString(),
+        name: item.title,
+        image: item.image,
+        cuisine: "Various",
+        difficulty: "medium" as const,
+        duration: 30,
+        ingredients: [
+          ...item.usedIngredients.map((ing: any) => ing.name),
+          ...item.missedIngredients.map((ing: any) => ing.name)
+        ],
+        availableIngredients: item.usedIngredients.map((ing: any) => ing.name),
+        missingIngredients: item.missedIngredients.map((ing: any) => ing.name),
+        matchPercentage,
+        instructions: [],
+        dietary: [],
+        saved: false
+      };
+    });
+
+    // Sort recipes by match percentage (highest first)
+    recipes.sort((a, b) => b.matchPercentage - a.matchPercentage);
 
     // Store recipes in Supabase
     for (const recipe of recipes) {

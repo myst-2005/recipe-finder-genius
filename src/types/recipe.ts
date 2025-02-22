@@ -10,4 +10,7 @@ export interface Recipe {
   instructions: string[];
   dietary: string[];
   saved: boolean;
+  availableIngredients?: string[];
+  missingIngredients?: string[];
+  matchPercentage?: number;
 }
