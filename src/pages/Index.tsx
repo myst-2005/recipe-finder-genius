@@ -1,12 +1,13 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 import SearchBar from "@/components/SearchBar";
 import RecipeCard from "@/components/RecipeCard";
 import DietaryFilter from "@/components/DietaryFilter";
 import { Recipe } from "@/types/recipe";
-import { searchRecipesByIngredients } from "@/services/recipeApi";
+import { searchRecipesByIngredients, toggleFavoriteRecipe, getFavoriteStatus } from "@/services/recipeApi";
+import { supabase } from "@/integrations/supabase/client";
 
 const dietaryOptions = [
   "vegetarian",
@@ -21,6 +22,15 @@ const Index = () => {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
+  const [user, setUser] = useState<{ id: string } | null>(null);
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Debounce search input
   const handleSearchChange = (value: string) => {
@@ -38,12 +48,26 @@ const Index = () => {
     enabled: debouncedSearch.length > 0,
   });
 
-  const handleSaveRecipe = (id: string) => {
-    // Update local state for saved recipes
-    const recipe = recipes.find(r => r.id === id);
-    if (recipe) {
+  const handleSaveRecipe = async (id: string) => {
+    try {
+      if (!user) {
+        toast({
+          title: "Please log in to save recipes",
+          variant: "destructive",
+          duration: 2000
+        });
+        return;
+      }
+
+      const isSaved = await toggleFavoriteRecipe(id, user.id);
       toast({
-        title: recipe.saved ? "Recipe removed from favorites" : "Recipe saved to favorites",
+        title: isSaved ? "Recipe saved to favorites" : "Recipe removed from favorites",
+        duration: 2000
+      });
+    } catch (error) {
+      toast({
+        title: "Error saving recipe",
+        variant: "destructive",
         duration: 2000
       });
     }
@@ -56,6 +80,18 @@ const Index = () => {
         : [...prev, option]
     );
   };
+
+  // Load favorite status for each recipe
+  useEffect(() => {
+    if (user && recipes.length > 0) {
+      recipes.forEach(async (recipe) => {
+        const isSaved = await getFavoriteStatus(recipe.id, user.id);
+        if (isSaved !== recipe.saved) {
+          recipe.saved = isSaved;
+        }
+      });
+    }
+  }, [recipes, user]);
 
   return (
     <div className="min-h-screen bg-gray-50">
