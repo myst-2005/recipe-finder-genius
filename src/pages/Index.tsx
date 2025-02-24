@@ -95,7 +95,7 @@ const Index = () => {
   }, [recipes, user]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#F2FCE2]">
       <div className="container py-8 space-y-8">
         <div className="flex justify-between items-center">
           <div className="text-center space-y-4 flex-grow">
