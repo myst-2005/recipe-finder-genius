@@ -23,7 +23,15 @@ const RecipeCard = ({ recipe, onSave }: RecipeCardProps) => {
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <Badge variant={recipe.matchPercentage > 75 ? "default" : "secondary"}>
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "font-semibold",
+                  recipe.matchPercentage > 75 
+                    ? "bg-green-100 text-green-700 border-green-300" 
+                    : "bg-red-100 text-red-700 border-red-300"
+                )}
+              >
                 {recipe.matchPercentage}% match
               </Badge>
               <span className="text-xs text-gray-500">{recipe.duration} mins</span>
@@ -46,10 +54,14 @@ const RecipeCard = ({ recipe, onSave }: RecipeCardProps) => {
         <div className="space-y-2">
           {recipe.availableIngredients.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-green-600 mb-1">You have:</p>
+              <p className="text-xs font-medium text-green-700 mb-1">You have:</p>
               <div className="flex flex-wrap gap-1">
                 {recipe.availableIngredients.map((ingredient, index) => (
-                  <Badge key={index} variant="outline" className="text-green-600 border-green-200 bg-green-50">
+                  <Badge 
+                    key={index} 
+                    variant="outline" 
+                    className="bg-green-100 text-green-700 border-green-300"
+                  >
                     {ingredient}
                   </Badge>
                 ))}
@@ -59,10 +71,14 @@ const RecipeCard = ({ recipe, onSave }: RecipeCardProps) => {
           
           {recipe.missingIngredients.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-orange-600 mb-1">You need:</p>
+              <p className="text-xs font-medium text-red-700 mb-1">You need:</p>
               <div className="flex flex-wrap gap-1">
                 {recipe.missingIngredients.map((ingredient, index) => (
-                  <Badge key={index} variant="outline" className="text-orange-600 border-orange-200 bg-orange-50">
+                  <Badge 
+                    key={index} 
+                    variant="outline" 
+                    className="bg-red-100 text-red-700 border-red-300"
+                  >
                     {ingredient}
                   </Badge>
                 ))}
