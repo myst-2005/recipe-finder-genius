@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
@@ -24,6 +23,15 @@ const Index = () => {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
   const [user, setUser] = useState<{ id: string } | null>(null);
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const updateCursor = (e: MouseEvent) => {
+      setCursorPosition({ x: e.clientX - 10, y: e.clientY - 10 });
+    };
+    window.addEventListener('mousemove', updateCursor);
+    return () => window.removeEventListener('mousemove', updateCursor);
+  }, []);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
@@ -33,7 +41,6 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Debounce search input
   const handleSearchChange = (value: string) => {
     setSearch(value);
     const timeoutId = setTimeout(() => {
@@ -42,7 +49,6 @@ const Index = () => {
     return () => clearTimeout(timeoutId);
   };
 
-  // Fetch recipes using React Query
   const { data: recipes = [], isLoading, isError } = useQuery({
     queryKey: ['recipes', debouncedSearch],
     queryFn: () => searchRecipesByIngredients(debouncedSearch, import.meta.env.VITE_SPOONACULAR_API_KEY),
@@ -82,7 +88,6 @@ const Index = () => {
     );
   };
 
-  // Load favorite status for each recipe
   useEffect(() => {
     if (user && recipes.length > 0) {
       recipes.forEach(async (recipe) => {
@@ -95,8 +100,25 @@ const Index = () => {
   }, [recipes, user]);
 
   return (
-    <div className="min-h-screen bg-[#F2FCE2]">
-      <div className="container py-8 space-y-8">
+    <div 
+      className="min-h-screen bg-[#F2FCE2] relative"
+      style={{
+        backgroundImage: 'url("/lovable-uploads/380a4453-1861-45ce-b612-13847c31565a.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
+      <div 
+        className="absolute inset-0 bg-[#F2FCE2]/70"
+      />
+      <div 
+        className="cursor-rainbow"
+        style={{
+          transform: `translate(${cursorPosition.x}px, ${cursorPosition.y}px)`
+        }}
+      />
+      <div className="container py-8 space-y-8 relative">
         <div className="flex justify-between items-center">
           <div className="text-center space-y-4 flex-grow">
             <h1 className="text-4xl font-bold text-gray-900">Recipe Finder</h1>
